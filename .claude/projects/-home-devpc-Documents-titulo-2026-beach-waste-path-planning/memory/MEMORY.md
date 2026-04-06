@@ -1,0 +1,3 @@
+- [User Profile](user_profile.md) — Robotics engineer building beach cleaning robot, thesis project 2026
+- [Project Context](project_context.md) — 4-wheel diff-drive beach robot, IMU+GPS EKF, Nav2 path planning
+- [Reference: TurtleBot4 Package](ref_turtlebot4_package.md) — Prior EKF+Nav2 work in ../turtlebot4_path_planning

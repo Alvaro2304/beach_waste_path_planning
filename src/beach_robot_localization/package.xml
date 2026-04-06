@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>beach_robot_localization</name>
+  <version>0.1.0</version>
+  <description>
+    Robot localization configuration for a beach cleaning robot.
+    Uses robot_localization (EKF + NavSat transform) to fuse IMU and GPS
+    data into a filtered odometry estimate. No wheel encoders are used
+    because sand makes them unreliable.
+  </description>
+  <maintainer email="todo@todo.com">devpc</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

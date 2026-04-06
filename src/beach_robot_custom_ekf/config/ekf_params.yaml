@@ -1,0 +1,30 @@
+# ==========================================================================
+# beach_robot_custom_ekf  --  default parameter values
+# ==========================================================================
+# All noise values are VARIANCES (sigma^2), not standard deviations.
+
+ekf_imu_gps_node:
+  ros__parameters:
+
+    # ---- Process noise Q (5x5 diagonal) -----------------------------------
+    # These scale linearly with dt inside the prediction step.
+    q_x:     0.01    # [m^2/s]   position-x process noise
+    q_y:     0.01    # [m^2/s]   position-y process noise
+    q_theta: 0.005   # [rad^2/s] heading process noise
+    q_v:     0.1     # [(m/s)^2/s] velocity process noise
+    q_omega: 0.05    # [(rad/s)^2/s] angular-rate process noise
+
+    # ---- GPS measurement noise R_gps (2x2 diagonal) ----------------------
+    # Consumer GPS is typically ~2m CEP => variance ~4 m^2.
+    r_gps_x: 4.0     # [m^2]
+    r_gps_y: 4.0     # [m^2]
+
+    # ---- IMU measurement noise R_imu (2x2 diagonal) ----------------------
+    r_imu_theta: 0.01   # [rad^2]  orientation (magnetometer / AHRS)
+    r_imu_omega: 0.001  # [(rad/s)^2]  gyroscope
+
+    # ---- Misc -------------------------------------------------------------
+    initial_covariance: 1.0   # diagonal of initial P matrix
+
+    imu_timeout:   0.5   # [s] warn if no IMU data for this long
+    gps_timeout:  10.0   # [s] warn if no GPS data for this long

@@ -1,0 +1,183 @@
+# =============================================================================
+# EKF configuration for beach_robot_localization
+# =============================================================================
+#
+# This file configures the robot_localization ekf_node (Extended Kalman Filter)
+# for a differential-drive beach-cleaning robot that has:
+#   - IMU  at /imu/data          (orientation, angular velocity, linear accel)
+#   - GPS  at /odometry/gps      (position, produced by navsat_transform_node)
+#   - NO wheel encoders           (sand makes them unreliable)
+#
+# The EKF fuses these two sources and publishes:
+#   /odometry/filtered            (nav_msgs/Odometry)
+#   TF: odom -> base_link
+#
+# Tuning guide (beach environment):
+#   - Sand causes high slip, so we rely on GPS for position and IMU for
+#     orientation / heading. There is no wheel odometry to drift.
+#   - two_d_mode is ON because the beach surface is approximately flat.
+#   - Process noise for position is kept moderate because the robot moves
+#     slowly on sand; increase it if the robot drives faster.
+#   - IMU gravitational acceleration removal is enabled because the IMU
+#     reports raw accelerometer readings that include gravity.
+# =============================================================================
+
+ekf_filter_node:
+  ros__parameters:
+
+    # -- General settings ----------------------------------------------------
+
+    # Rate (Hz) at which the filter produces output. 50 Hz is a good default
+    # for real-time control on a slow outdoor robot.
+    frequency: 50
+
+    # Sensor timeout (seconds). If no measurement arrives within this window
+    # the filter will predict without correction.
+    sensor_timeout: 0.1
+
+    # Operate in 2-D mode: forces roll, pitch, and their velocities to zero.
+    # The beach is essentially flat, so this simplifies the state and avoids
+    # spurious tilt estimates from noisy accelerometers on uneven sand.
+    two_d_mode: true
+
+    # Publish the odom -> base_link transform on /tf.
+    publish_tf: true
+
+    # Print diagnostics to /diagnostics (useful while tuning).
+    print_diagnostics: true
+
+    # -- Frame IDs -----------------------------------------------------------
+
+    # map_frame is used only when world_frame == "map". We keep it here for
+    # completeness; with world_frame == "odom" it is unused.
+    map_frame: map
+
+    # The local fixed frame. All filter output is expressed in this frame.
+    odom_frame: odom
+
+    # The robot body frame.
+    base_link_frame: base_link
+
+    # world_frame determines the filter's reference. Use "odom" when the
+    # filter only has to maintain a local (non-global) estimate. The
+    # navsat_transform_node provides the odom-frame GPS odometry.
+    world_frame: odom
+
+    # -- Sensor 0: GPS odometry (from navsat_transform_node) -----------------
+    #
+    # navsat_transform_node converts NavSatFix -> /odometry/gps in the odom
+    # frame. We only use the x,y position from it.
+    #
+    # Config matrix order (15 values):
+    #   x,     y,     z,
+    #   roll,  pitch, yaw,
+    #   vx,    vy,    vz,
+    #   vroll, vpitch,vyaw,
+    #   ax,    ay,    az
+
+    odom0: /odometry/gps
+
+    odom0_config: [true,  true,  false,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false]
+
+    # Use absolute (not differential) GPS position. Differential mode would
+    # integrate deltas, amplifying drift.
+    odom0_differential: false
+
+    # Queue depth for incoming GPS odometry messages.
+    odom0_queue_size: 10
+
+    # -- Sensor 1: IMU -------------------------------------------------------
+    #
+    # The IMU provides:
+    #   - Orientation (roll, pitch, yaw) from its internal AHRS filter
+    #   - Yaw angular velocity (gyroscope z-axis)
+    #   - Forward linear acceleration (accelerometer x-axis)
+    #
+    # We do NOT use linear velocity from the IMU (it has none) and we only
+    # use the x-axis linear acceleration because, in 2-D mode on flat ground,
+    # lateral and vertical accelerations are mostly noise.
+
+    imu0: /imu/data
+
+    imu0_config: [false, false, false,
+                  true,  true,  true,
+                  false, false, false,
+                  false, false, true,
+                  true,  false, false]
+
+    # Absolute orientation, not differential.
+    imu0_differential: false
+
+    # The raw accelerometer includes gravity (~9.81 m/s^2 on the z-axis).
+    # robot_localization subtracts it so the filter only sees motion-related
+    # acceleration.
+    imu0_remove_gravitational_acceleration: true
+
+    # Higher queue size for IMU because it publishes much faster than GPS.
+    imu0_queue_size: 50
+
+    # -- Process noise covariance --------------------------------------------
+    #
+    # 15x15 diagonal matrix stored in row-major order (225 elements).
+    # Only the diagonal values matter here. Larger values = less trust in
+    # the motion model = more reliance on sensor measurements.
+    #
+    # Order of state variables:
+    #   x, y, z, roll, pitch, yaw,
+    #   vx, vy, vz, vroll, vpitch, vyaw,
+    #   ax, ay, az
+    #
+    # Beach tuning notes:
+    #   - Position noise (0.05): moderate, since we have no wheel odometry
+    #     the model can only predict from acceleration integration.
+    #   - Orientation noise (0.03): small, the IMU is the main heading source
+    #     and its drift is slow.
+    #   - Velocity noise (0.1): moderate, acceleration-integrated velocity
+    #     drifts on sand.
+    #   - Angular velocity noise (0.1): moderate.
+    #   - Acceleration noise (0.3): higher, because sand vibrations and
+    #     terrain roughness add significant accelerometer noise.
+
+    process_noise_covariance:
+      [0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.3,  0.0,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.3,  0.0,
+       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.3]
+
+    # -- Initial estimate covariance -----------------------------------------
+    #
+    # 15x15 diagonal. Very small values (1e-9) mean we strongly trust the
+    # initial state (all zeros). The filter will converge quickly once
+    # sensor data arrives.
+
+    initial_estimate_covariance:
+      [1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,    0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9, 0.0,
+       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1.0e-9]

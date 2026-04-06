@@ -1,0 +1,97 @@
+# =============================================================================
+# NavSat Transform configuration for beach_robot_localization
+# =============================================================================
+#
+# navsat_transform_node converts GPS (sensor_msgs/NavSatFix) into local
+# odometry (nav_msgs/Odometry) in the odom frame so the EKF can fuse it.
+#
+# Data flow:
+#   /gps/fix                --> navsat_transform_node --> /odometry/gps
+#   /imu/data               -->        ^
+#   /odometry/filtered      -->        |  (feedback: the node uses the
+#                                         filtered pose to set the datum
+#                                         and convert between UTM and odom)
+#
+# The node also optionally publishes the inverse transform so you can
+# convert filtered odometry back to lat/lon (/gps/filtered).
+#
+# Beach-specific notes:
+#   - zero_altitude is ON because the beach is at sea level and we operate
+#     in 2-D mode. Altitude from consumer-grade GPS is very noisy.
+#   - use_odometry_yaw is ON so the heading comes from the EKF (which
+#     fuses IMU gyro + magnetometer) rather than raw magnetometer alone.
+#     This is important on a beach where metal in the robot chassis can
+#     cause hard/soft iron distortions.
+#   - magnetic_declination_radians should be set to the local value.
+#     Look it up at https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml
+# =============================================================================
+
+navsat_transform_node:
+  ros__parameters:
+
+    # -- Timing --------------------------------------------------------------
+
+    # Output rate (Hz). GPS typically provides fixes at 1-10 Hz; there is no
+    # benefit in running this node faster than the GPS rate, but 10 Hz
+    # ensures we do not miss any fix.
+    frequency: 10
+
+    # Delay (seconds) before processing the first GPS fix. Set to 0.0 for
+    # immediate start. Increase if your GPS needs warm-up time.
+    delay: 0.0
+
+    # -- Magnetic declination ------------------------------------------------
+
+    # The angle (radians) between magnetic north and true north at your
+    # location. IMPORTANT: set this for your beach site.
+    #   Example for Mazatlan, Mexico (~8.5 deg E): 0.1484
+    #   Example for Los Angeles, USA (~12 deg E):  0.2094
+    #   Example for Barcelona, Spain (~2 deg E):   0.0349
+    # A wrong value rotates the entire map by that error.
+    magnetic_declination_radians: 0.0
+
+    # -- Yaw offset ----------------------------------------------------------
+
+    # Static yaw offset (radians) added to the IMU heading. Use this if the
+    # IMU is mounted rotated with respect to the robot's forward axis.
+    # 0.0 = IMU x-axis points forward.
+    yaw_offset: 0.0
+
+    # -- Altitude ------------------------------------------------------------
+
+    # Force altitude to zero in the odom frame. Beach robots operate at sea
+    # level and consumer-grade GPS altitude is unreliable (often +-10 m).
+    zero_altitude: true
+
+    # -- UTM transform -------------------------------------------------------
+
+    # Broadcast the UTM -> odom transform on /tf. Useful for visualization
+    # in RViz and for any node that needs to work in UTM coordinates.
+    broadcast_utm_transform: true
+
+    # Use multitrack UTM if you are concerned about being near a UTM zone
+    # boundary. For most beach operations a single zone is fine.
+    broadcast_utm_transform_as_parent_frame: false
+
+    # -- Filtered GPS output -------------------------------------------------
+
+    # Publish the EKF-filtered pose back as a NavSatFix on /gps/filtered.
+    # Handy for logging a "smoothed" GPS track of the robot.
+    publish_filtered_gps: true
+
+    # -- Heading source ------------------------------------------------------
+
+    # When true, the node takes its heading from /odometry/filtered (the EKF
+    # output) instead of directly from the IMU magnetometer. This is
+    # strongly recommended because:
+    #   1. The EKF heading is already fused and filtered.
+    #   2. Magnetometer readings on a beach can be disturbed by the robot's
+    #      own motors and metal frame.
+    use_odometry_yaw: true
+
+    # -- Datum ---------------------------------------------------------------
+
+    # When false the node uses the first valid GPS fix as the datum origin.
+    # Set to true only if you want to provide an explicit datum via the
+    # /datum service or parameter.
+    wait_for_datum: false
