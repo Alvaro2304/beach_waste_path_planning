@@ -1,15 +1,18 @@
 #!/bin/bash
 set -e
 
-# Source ROS 2 Jazzy
-source /opt/ros/jazzy/setup.bash
+# Fix ownership of named volumes (Docker creates them as root)
+sudo chown -R $(id -u):$(id -g) /ros2_ws/build /ros2_ws/install /ros2_ws/log 2>/dev/null || true
+
+# Source ROS 2 Humble
+source /opt/ros/humble/setup.bash
 
 # Source workspace overlay if built
 if [ -f /ros2_ws/install/setup.bash ]; then
     source /ros2_ws/install/setup.bash
 fi
 
-# Gazebo resource path
-export GZ_SIM_RESOURCE_PATH="/ros2_ws/src:${GZ_SIM_RESOURCE_PATH}"
+# Gazebo Fortress resource path
+export IGN_GAZEBO_RESOURCE_PATH="/ros2_ws/src:${IGN_GAZEBO_RESOURCE_PATH}"
 
 exec "$@"

@@ -29,7 +29,7 @@ ekf_filter_node:
 
     # Rate (Hz) at which the filter produces output. 50 Hz is a good default
     # for real-time control on a slow outdoor robot.
-    frequency: 50
+    frequency: 50.0
 
     # Sensor timeout (seconds). If no measurement arrives within this window
     # the filter will predict without correction.

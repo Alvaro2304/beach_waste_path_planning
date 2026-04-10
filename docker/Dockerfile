@@ -1,38 +1,38 @@
-FROM osrf/ros:jazzy-desktop
+FROM osrf/ros:humble-desktop
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # ── Core ROS 2 packages ─────────────────────────────────────────────
 RUN apt-get update && apt-get install -y \
-    # Gazebo Harmonic + ROS bridge
-    ros-jazzy-ros-gz \
+    # Gazebo Fortress + ROS bridge
+    ros-humble-ros-gz \
     # Navigation 2
-    ros-jazzy-navigation2 \
-    ros-jazzy-nav2-bringup \
+    ros-humble-navigation2 \
+    ros-humble-nav2-bringup \
     # Localization
-    ros-jazzy-robot-localization \
-    ros-jazzy-slam-toolbox \
+    ros-humble-robot-localization \
+    ros-humble-slam-toolbox \
     # Robot description tooling
-    ros-jazzy-joint-state-publisher \
-    ros-jazzy-joint-state-publisher-gui \
-    ros-jazzy-xacro \
-    ros-jazzy-robot-state-publisher \
+    ros-humble-joint-state-publisher \
+    ros-humble-joint-state-publisher-gui \
+    ros-humble-xacro \
+    ros-humble-robot-state-publisher \
     # TF / diagnostics
-    ros-jazzy-tf2-tools \
-    ros-jazzy-tf-transformations \
-    ros-jazzy-diagnostic-updater \
+    ros-humble-tf2-tools \
+    ros-humble-tf-transformations \
+    ros-humble-diagnostic-updater \
     # Controller stack (for diff-drive simulation)
-    ros-jazzy-ros2-control \
-    ros-jazzy-ros2-controllers \
-    ros-jazzy-gz-ros2-control \
+    ros-humble-ros2-control \
+    ros-humble-ros2-controllers \
+    ros-humble-ign-ros2-control \
     # GPS / sensor messages
-    ros-jazzy-geographic-msgs \
-    ros-jazzy-mavros-msgs \
+    ros-humble-geographic-msgs \
+    ros-humble-mavros-msgs \
     && rm -rf /var/lib/apt/lists/*
 
 # ── PlotJuggler (separate layer — may lag behind on new distros) ────
 RUN apt-get update && apt-get install -y \
-    ros-jazzy-plotjuggler-ros \
+    ros-humble-plotjuggler-ros \
     || echo "plotjuggler-ros not available as deb, will install from source if needed" \
     && rm -rf /var/lib/apt/lists/*
 
@@ -79,9 +79,9 @@ RUN mkdir -p /ros2_ws/src && chown -R ${USERNAME}:${USERNAME} /ros2_ws
 USER ${USERNAME}
 WORKDIR /ros2_ws
 
-RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc && \
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
     echo '[ -f /ros2_ws/install/setup.bash ] && source /ros2_ws/install/setup.bash' >> ~/.bashrc && \
-    echo 'export GZ_SIM_RESOURCE_PATH=/ros2_ws/src:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+    echo 'export IGN_GAZEBO_RESOURCE_PATH=/ros2_ws/src:${IGN_GAZEBO_RESOURCE_PATH}' >> ~/.bashrc
 
 COPY --chown=${USERNAME}:${USERNAME} docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

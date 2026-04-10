@@ -34,7 +34,7 @@ navsat_transform_node:
     # Output rate (Hz). GPS typically provides fixes at 1-10 Hz; there is no
     # benefit in running this node faster than the GPS rate, but 10 Hz
     # ensures we do not miss any fix.
-    frequency: 10
+    frequency: 10.0
 
     # Delay (seconds) before processing the first GPS fix. Set to 0.0 for
     # immediate start. Increase if your GPS needs warm-up time.
