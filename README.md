@@ -2,9 +2,12 @@
 
 Autonomous navigation stack for a beach waste collection robot. Built on ROS 2 Jazzy with Gazebo Harmonic simulation.
 
+![Beach robot in Gazebo Harmonic](public/images/readme/gazebo_robot.png)
+
 ## Robot Platform
 
-- **Drive:** 4 actuated wheels, differential drive configuration
+- **Chassis:** 0.60 × 0.35 × 0.15 m, ~20 kg
+- **Drive:** 4 actuated wheels, differential drive (13 cm radius, 6 cm width)
 - **Environment:** Beach / sand terrain (irregular surface)
 - **Onboard compute:**
   - Raspberry Pi 5 (8 GB) — ROS 2 Jazzy navigation stack (Ubuntu 24.04)
@@ -97,6 +100,30 @@ ros2 launch beach_robot_custom_ekf ekf_custom.launch.py
 ros2 launch beach_robot_localization dual_ekf_navsat.launch.py
 ```
 
+### Simulation (Gazebo Harmonic)
+
+```bash
+# Inside the container — sanity-check the URDF in RViz
+ros2 launch beach_robot_description display.launch.py
+
+# Spawn the robot in Gazebo Harmonic with IMU + GPS + DiffDrive
+ros2 launch beach_robot_description gazebo.launch.py
+```
+
+Drive the robot from another terminal:
+
+```bash
+docker compose exec ros2-dev bash
+ros2 topic pub -r 2 /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.3}}'
+```
+
+Sensor topics use `BEST_EFFORT` QoS — echo them with:
+
+```bash
+ros2 topic echo /imu/data --qos-reliability best_effort
+ros2 topic echo /gps/fix --qos-reliability best_effort
+```
+
 ### Open additional terminals
 
 ```bash
@@ -132,6 +159,13 @@ beach_waste_path_planning/
 │   ├── docker-compose.yml      # NVIDIA GPU + X11 + volume mounts
 │   └── entrypoint.sh           # Sources ROS 2 and workspace on entry
 ├── src/
+│   ├── beach_robot_description/    # URDF + Gazebo Harmonic world + launch
+│   │   ├── urdf/beach_robot.urdf.xacro
+│   │   ├── urdf/gazebo.xacro
+│   │   ├── worlds/beach_empty.sdf
+│   │   ├── config/bridge.yaml
+│   │   ├── launch/display.launch.py
+│   │   └── launch/gazebo.launch.py
 │   ├── beach_robot_custom_ekf/     # Option A: custom EKF (C++)
 │   │   ├── src/ekf_imu_gps.cpp
 │   │   ├── config/ekf_params.yaml
@@ -140,6 +174,7 @@ beach_waste_path_planning/
 │       ├── config/ekf.yaml
 │       ├── config/navsat.yaml
 │       └── launch/dual_ekf_navsat.launch.py
+├── public/images/readme/       # README assets
 ├── config/                     # Shared configuration files
 ├── scripts/                    # Utility scripts
 ├── .gitignore
@@ -149,10 +184,12 @@ beach_waste_path_planning/
 
 ## Sensor Topics
 
-| Topic | Type | Source | Used by |
-|-------|------|--------|---------|
-| `/imu/data` | `sensor_msgs/Imu` | IMU driver | Both EKF options |
-| `/gps/fix` | `sensor_msgs/NavSatFix` | GPS driver | Both EKF options |
+| Topic | Type | Source (sim / real) | Used by |
+|-------|------|---------------------|---------|
+| `/imu/data` | `sensor_msgs/Imu` | `gz-sim-imu-system` (sim) / IMU driver (real) | Both EKF options |
+| `/gps/fix` | `sensor_msgs/NavSatFix` | `gz-sim-navsat-system` (sim) / GPS driver (real) | Both EKF options |
+| `/cmd_vel` | `geometry_msgs/Twist` | teleop / Nav2 | DiffDrive controller |
+| `/odom` | `nav_msgs/Odometry` | `gz-sim-diff-drive-system` (sim) | Debug / comparison with EKF |
 | `/odometry/filtered` | `nav_msgs/Odometry` | EKF output | Nav2, downstream consumers |
 | `/odometry/gps` | `nav_msgs/Odometry` | navsat\_transform\_node | Option B only (internal) |
 
