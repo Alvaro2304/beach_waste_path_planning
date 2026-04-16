@@ -1,13 +1,13 @@
 # Beach Waste Path Planning
 
-Autonomous navigation stack for a beach waste collection robot. Built on ROS 2 Humble with Gazebo Fortress simulation.
+Autonomous navigation stack for a beach waste collection robot. Built on ROS 2 Jazzy with Gazebo Harmonic simulation.
 
 ## Robot Platform
 
 - **Drive:** 4 actuated wheels, differential drive configuration
 - **Environment:** Beach / sand terrain (irregular surface)
 - **Onboard compute:**
-  - Raspberry Pi 4 (8 GB) — ROS 2 Humble navigation stack
+  - Raspberry Pi 5 (8 GB) — ROS 2 Jazzy navigation stack (Ubuntu 24.04)
   - Jetson Nano (original) — vision / AI waste detection
 - **Primary sensors:** IMU + GPS
   - Wheel encoders are **not used for localization** — sand causes excessive slip and drift
@@ -113,7 +113,7 @@ All GUI tools render on the host display via X11 forwarding:
 # Inside the container
 rviz2 &
 ros2 run plotjuggler plotjuggler &
-ign gazebo &
+gz sim &
 ```
 
 ### Stop the container
@@ -128,7 +128,7 @@ docker compose down
 ```
 beach_waste_path_planning/
 ├── docker/
-│   ├── Dockerfile              # ROS 2 Humble + Gazebo Fortress + dev tools
+│   ├── Dockerfile              # ROS 2 Jazzy + Gazebo Harmonic + dev tools
 │   ├── docker-compose.yml      # NVIDIA GPU + X11 + volume mounts
 │   └── entrypoint.sh           # Sources ROS 2 and workspace on entry
 ├── src/
