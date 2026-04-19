@@ -1,0 +1,25 @@
+joy_node:
+  ros__parameters:
+    device_id: 0
+    deadzone: 0.1
+    autorepeat_rate: 20.0
+
+teleop_twist_joy_node:
+  ros__parameters:
+    # PS4 DualShock 4 button / axis map (kernel hid-sony driver)
+    # Axes: 0=LeftX  1=LeftY  2=L2  3=RightX  4=RightY  5=R2
+    # Buttons: 0=X  1=O  2=Triangle  3=Square  4=L1  5=R1  6=L2btn  7=R2btn
+    #          8=Share  9=Options  10=PS  11=L3  12=R3
+    require_enable_button: true
+    enable_button: 4          # L1 — hold to drive (deadman switch)
+    enable_turbo_button: 5    # R1 — hold with L1 for full speed
+
+    # Linear velocity: left stick vertical (axis 1)
+    axis_linear.x: 1
+    scale_linear.x: 0.5       # m/s at normal speed
+    scale_linear_turbo.x: 1.0 # m/s with turbo
+
+    # Angular velocity: right stick horizontal (axis 3)
+    axis_angular.yaw: 3
+    scale_angular.yaw: 1.0    # rad/s
+    scale_angular_turbo.yaw: 1.5

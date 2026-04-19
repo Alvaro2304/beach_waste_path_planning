@@ -17,17 +17,17 @@ Key decisions:
 - Robot URDF/model being designed from scratch (still in design phase as of 2026-04-09)
 
 Hardware:
-- Dev PC: Ubuntu 22.04, NVIDIA GPU — Docker with ROS 2 Humble + Gazebo Fortress
+- Dev PC: Ubuntu 22.04, NVIDIA GPU — Docker with ROS 2 Jazzy + Gazebo Harmonic
 - Dev laptop: also has NVIDIA GPU (used for coding while at work)
-- Robot onboard: Raspberry Pi 4 (8GB) — runs ROS 2 Humble navigation stack
+- Robot onboard: Raspberry Pi 5 (8GB) — runs ROS 2 Jazzy navigation stack
 - Robot onboard: Jetson Nano (original 4GB, JetPack 4.x) — vision/AI only, NOT running ROS 2 nav
-- GUI tools (Gazebo Fortress, RViz2, PlotJuggler) via X11 forwarding from Docker
+- GUI tools (Gazebo Harmonic, RViz2, PlotJuggler) via X11 forwarding from Docker
 
 Architecture:
 - Jetson Nano: waste detection / computer vision
-- RPi4: ROS 2 Humble, EKF, Nav2, motor control
-- Communication between Jetson and RPi4 TBD
+- RPi5: ROS 2 Jazzy, EKF, Nav2, motor control
+- Communication between Jetson and RPi5 TBD
 
-IMPORTANT: Changed from RPi5 + Jazzy to RPi4 + Humble on 2026-04-09.
-Gazebo version changed from Harmonic to Fortress accordingly.
-Ignition-era package naming applies (ign-ros2-control, IGN_GAZEBO_RESOURCE_PATH, etc.)
+Reverted back to ROS 2 Jazzy + Gazebo Harmonic as of 2026-04-10 (commits 64ac5a7, 7ba8b0a).
+Previously tried switching to Humble for RPi4 compatibility but reverted.
+Gazebo Harmonic package naming applies (gz-ros2-control, GZ_SIM_RESOURCE_PATH, etc.)

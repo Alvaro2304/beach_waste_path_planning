@@ -29,11 +29,19 @@ services:
       - build_cache:/ros2_ws/build
       - install_cache:/ros2_ws/install
       - log_cache:/ros2_ws/log
+      # Joystick / game controller hot-plug support (covers js0..jsN and eventX)
+      - /dev/input:/dev/input:ro
 
     # Host networking for DDS discovery (avoids multicast issues)
     network_mode: host
     # Shared memory transport for fast intra-host comms
     ipc: host
+
+    # Allow the container to read input devices (major 13 = joysticks, eventX)
+    # Pairs with the /dev/input bind mount — the mount exposes device nodes,
+    # this rule grants the cgroup permission to actually open them.
+    device_cgroup_rules:
+      - 'c 13:* rmw'
 
     stdin_open: true
     tty: true

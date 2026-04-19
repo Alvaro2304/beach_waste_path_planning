@@ -117,6 +117,50 @@ docker compose exec ros2-dev bash
 ros2 topic pub -r 2 /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.3}}'
 ```
 
+### Teleoperation with a PS4 controller
+
+The container ships with `joy` + `teleop_twist_joy` and a DualShock 4 config in
+`src/beach_robot_description/config/joy_ps4.yaml`.
+
+**On the host — pair the controller first:**
+
+- **USB:** just plug it in. The kernel `hid-sony` driver registers it as `/dev/input/js0`.
+- **Bluetooth:** pair once with `bluetoothctl`:
+  ```bash
+  bluetoothctl
+  # > scan on
+  # (hold PS + Share on the controller until the light bar flashes)
+  # > pair XX:XX:XX:XX:XX:XX
+  # > trust XX:XX:XX:XX:XX:XX
+  # > connect XX:XX:XX:XX:XX:XX
+  ```
+
+Verify the controller is visible on the host:
+
+```bash
+ls /dev/input/js*          # should list js0
+jstest /dev/input/js0      # optional: shows live axis/button values
+```
+
+`docker-compose.yml` bind-mounts `/dev/input` read-only, so the container picks
+up the controller automatically — **no `docker compose restart` needed** when
+you plug it in after the container is already running.
+
+**Inside the container — run teleop:**
+
+```bash
+ros2 launch beach_robot_description teleop.launch.py
+```
+
+Default button map (edit `config/joy_ps4.yaml` to change):
+
+| Control | Action |
+|---|---|
+| **L1** (hold) | Deadman — must be held to drive |
+| **L1 + R1** (hold) | Turbo mode (higher speed) |
+| Left stick Y | Linear velocity (forward / back) |
+| Right stick X | Angular velocity (turn) |
+
 Sensor topics use `BEST_EFFORT` QoS — echo them with:
 
 ```bash
@@ -164,8 +208,10 @@ beach_waste_path_planning/
 │   │   ├── urdf/gazebo.xacro
 │   │   ├── worlds/beach_empty.sdf
 │   │   ├── config/bridge.yaml
+│   │   ├── config/joy_ps4.yaml         # PS4 teleop button/axis map
 │   │   ├── launch/display.launch.py
-│   │   └── launch/gazebo.launch.py
+│   │   ├── launch/gazebo.launch.py
+│   │   └── launch/teleop.launch.py     # joy + teleop_twist_joy
 │   ├── beach_robot_custom_ekf/     # Option A: custom EKF (C++)
 │   │   ├── src/ekf_imu_gps.cpp
 │   │   ├── config/ekf_params.yaml
@@ -195,8 +241,48 @@ beach_waste_path_planning/
 
 ## Development Notes
 
-- **Editing code:** edit files in `src/` and `config/` from your host IDE — they are bind-mounted into the container
-- **Build cache:** colcon build/install/log directories are stored in Docker named volumes, so rebuilds are fast across container restarts
-- **Clearing build cache:** `docker volume rm docker_build_cache docker_install_cache docker_log_cache`
-- **Rebuilding the image:** `cd docker && docker compose build --no-cache`
-- **UID mapping:** the container user matches host UID 1000 to avoid file permission issues
+- **Editing code:** edit files in `src/` and `config/` from your host IDE — they are bind-mounted into the container.
+- **Build cache:** the colcon `build/`, `install/`, and `log/` directories live in Docker named volumes, so `colcon build` stays fast across container restarts.
+- **UID mapping:** the container user matches host UID 1000 to avoid file permission issues on bind-mounted files.
+
+### Rebuilding the image
+
+Only needed when the **Dockerfile** or apt package list changes. For day-to-day
+code changes, just `colcon build` inside the container.
+
+**Default — small Dockerfile change (add/remove a package, tweak a RUN line):**
+
+```bash
+cd docker
+docker compose down
+docker compose build       # layer cache reuses unchanged layers — fast, minimal extra disk
+docker compose up -d
+```
+
+**Occasional housekeeping — once disk gets tight (`docker system df`):**
+
+```bash
+docker image prune -af     # removes dangling <none>:<none> images
+docker builder prune -af   # clears BuildKit cache
+```
+
+**Worst case — base image swap, `--no-cache` rebuild, or full disk causing apt
+GPG errors (`At least one invalid signature was encountered`):**
+
+```bash
+cd docker
+docker compose down
+docker image rm beach_robot:jazzy    # release old layers
+docker builder prune -af
+docker image prune -af
+df -h /                              # confirm ≥15 GB free before continuing
+docker compose build
+docker compose up -d
+```
+
+**Clear colcon cache** (separate from the Docker image, forces a fresh
+`colcon build`):
+
+```bash
+docker volume rm docker_build_cache docker_install_cache docker_log_cache
+```

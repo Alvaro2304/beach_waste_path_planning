@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y \
     # GPS / sensor messages
     ros-jazzy-geographic-msgs \
     ros-jazzy-mavros-msgs \
+    # Teleoperation (PS4 / joystick)
+    ros-jazzy-joy \
+    ros-jazzy-teleop-twist-joy \
     && rm -rf /var/lib/apt/lists/*
 
 # ── PlotJuggler (separate layer — may lag behind on new distros) ────
@@ -70,7 +73,10 @@ RUN EXISTING_USER=$(getent passwd ${USER_UID} | cut -d: -f1) && \
         groupadd --gid ${USER_GID} ${USERNAME} 2>/dev/null || true && \
         useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME}; \
     fi && \
-    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    # Allow the dev user to read /dev/input/js* (owned by root:input on host)
+    groupadd -f input && \
+    usermod -aG input,dialout,video ${USERNAME}
 
 # ── Workspace setup ─────────────────────────────────────────────────
 RUN mkdir -p /ros2_ws/src && chown -R ${USERNAME}:${USERNAME} /ros2_ws
