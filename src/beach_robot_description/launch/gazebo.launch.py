@@ -3,6 +3,7 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -14,7 +15,9 @@ def generate_launch_description():
     bridge_config = PathJoinSubstitution([pkg_share, 'config', 'bridge.yaml'])
     world_path = PathJoinSubstitution([pkg_share, 'worlds', 'beach_empty.sdf'])
 
-    robot_description = Command(['xacro ', xacro_path])
+    # ParameterValue(..., value_type=str) forces launch to pass the URDF as a
+    # string, skipping YAML type inference which fails on URDF contents.
+    robot_description = ParameterValue(Command(['xacro ', xacro_path]), value_type=str)
 
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(

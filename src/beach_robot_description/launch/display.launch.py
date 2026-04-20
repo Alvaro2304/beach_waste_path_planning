@@ -2,6 +2,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -10,7 +11,7 @@ def generate_launch_description():
     xacro_path = PathJoinSubstitution([pkg_share, 'urdf', 'beach_robot.urdf.xacro'])
     rviz_config = PathJoinSubstitution([pkg_share, 'rviz', 'display.rviz'])
 
-    robot_description = Command(['xacro ', xacro_path])
+    robot_description = ParameterValue(Command(['xacro ', xacro_path]), value_type=str)
 
     return LaunchDescription([
         DeclareLaunchArgument('use_gui', default_value='true',

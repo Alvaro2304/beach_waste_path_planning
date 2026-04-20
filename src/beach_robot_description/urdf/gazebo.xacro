@@ -22,6 +22,18 @@
     </plugin>
   </gazebo>
 
+  <!-- ============================================================== -->
+  <!--  IMU — BNO055 on sand terrain (harsh / realistic profile)       -->
+  <!-- ============================================================== -->
+  <!-- Datasheet-nominal (clean lab) values, kept for comparison:       -->
+  <!--   gyro  stddev = 0.0024 rad/s  (0.014 deg/s/sqrt(Hz) * sqrt(100))-->
+  <!--   accel stddev = 0.015 m/s^2   (150 ug/sqrt(Hz) * g * sqrt(100)) -->
+  <!--                                                                  -->
+  <!-- Harsh values below assume:                                       -->
+  <!--   - rigid chassis on irregular sand (high-freq vibration)        -->
+  <!--   - small motors near IMU (EMI / magnetic disturbance)           -->
+  <!--   - slow bias drift typical of MEMS gyros                        -->
+  <!-- ============================================================== -->
   <gazebo reference="imu_link">
     <sensor name="imu_sensor" type="imu">
       <always_on>true</always_on>
@@ -30,19 +42,65 @@
       <gz_frame_id>imu_link</gz_frame_id>
       <imu>
         <angular_velocity>
-          <x><noise type="gaussian"><mean>0</mean><stddev>0.001</stddev></noise></x>
-          <y><noise type="gaussian"><mean>0</mean><stddev>0.001</stddev></noise></y>
-          <z><noise type="gaussian"><mean>0</mean><stddev>0.001</stddev></noise></z>
+          <!-- ~2x datasheet stddev + slow bias drift for sand vibration -->
+          <x><noise type="gaussian">
+            <mean>0.0</mean><stddev>0.005</stddev>
+            <bias_mean>0.000</bias_mean><bias_stddev>0.000</bias_stddev>
+            <dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+            <dynamic_bias_correlation_time>1000.0</dynamic_bias_correlation_time>
+          </noise></x>
+          <y><noise type="gaussian">
+            <mean>0.0</mean><stddev>0.005</stddev>
+            <bias_mean>0.000</bias_mean><bias_stddev>0.000</bias_stddev>
+            <dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+            <dynamic_bias_correlation_time>1000.0</dynamic_bias_correlation_time>
+          </noise></y>
+          <z><noise type="gaussian">
+            <mean>0.0</mean><stddev>0.005</stddev>
+            <bias_mean>0.000</bias_mean><bias_stddev>0.000</bias_stddev>
+            <dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+            <dynamic_bias_correlation_time>1000.0</dynamic_bias_correlation_time>
+          </noise></z>
         </angular_velocity>
         <linear_acceleration>
-          <x><noise type="gaussian"><mean>0</mean><stddev>0.01</stddev></noise></x>
-          <y><noise type="gaussian"><mean>0</mean><stddev>0.01</stddev></noise></y>
-          <z><noise type="gaussian"><mean>0</mean><stddev>0.01</stddev></noise></z>
+          <!-- ~6x datasheet stddev: sand bumps dominate, not electronics -->
+          <x><noise type="gaussian">
+            <mean>0.0</mean><stddev>0.1</stddev>
+            <bias_mean>0.0</bias_mean><bias_stddev>0.0</bias_stddev>
+            <dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+            <dynamic_bias_correlation_time>300.0</dynamic_bias_correlation_time>
+          </noise></x>
+          <y><noise type="gaussian">
+            <mean>0.0</mean><stddev>0.1</stddev>
+            <bias_mean>0.0</bias_mean><bias_stddev>0.0</bias_stddev>
+            <dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+            <dynamic_bias_correlation_time>300.0</dynamic_bias_correlation_time>
+          </noise></y>
+          <z><noise type="gaussian">
+            <mean>0.0</mean><stddev>0.1</stddev>
+            <bias_mean>0.0</bias_mean><bias_stddev>0.0</bias_stddev>
+            <dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+            <dynamic_bias_correlation_time>300.0</dynamic_bias_correlation_time>
+          </noise></z>
         </linear_acceleration>
       </imu>
     </sensor>
   </gazebo>
 
+  <!-- ============================================================== -->
+  <!--  GPS — u-blox NEO-8M on open-sky beach                         -->
+  <!-- ============================================================== -->
+  <!-- Datasheet: 2.5 m CEP horizontal (= stddev 2.12 m).             -->
+  <!-- Kept at 2.5 m real-world because beach GPS also suffers from:   -->
+  <!--   - multipath from wet sand / water surface                     -->
+  <!--   - occasional signal dropouts near dunes                       -->
+  <!--                                                                  -->
+  <!-- IMPORTANT: gz-sim-navsat applies <horizontal> noise stddev      -->
+  <!-- directly in DEGREES of latitude/longitude, not meters.           -->
+  <!-- Conversion: 1 degree of latitude ~= 111 320 m.                   -->
+  <!--   2.5 m   -> 2.5 / 111320  ~= 2.25e-5 deg                        -->
+  <!-- Vertical is in meters (altitude), keep as-is.                    -->
+  <!-- ============================================================== -->
   <gazebo reference="gps_link">
     <sensor name="gps_sensor" type="navsat">
       <always_on>true</always_on>
@@ -51,7 +109,7 @@
       <gz_frame_id>gps_link</gz_frame_id>
       <navsat>
         <position_sensing>
-          <horizontal><noise type="gaussian"><mean>0</mean><stddev>2.5</stddev></noise></horizontal>
+          <horizontal><noise type="gaussian"><mean>0</mean><stddev>2.25e-5</stddev></noise></horizontal>
           <vertical><noise type="gaussian"><mean>0</mean><stddev>5.0</stddev></noise></vertical>
         </position_sensing>
       </navsat>

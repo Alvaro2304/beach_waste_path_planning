@@ -239,6 +239,30 @@ beach_waste_path_planning/
 | `/odometry/filtered` | `nav_msgs/Odometry` | EKF output | Nav2, downstream consumers |
 | `/odometry/gps` | `nav_msgs/Odometry` | navsat\_transform\_node | Option B only (internal) |
 
+## Observations
+
+### gz-sim-navsat applies horizontal noise in **degrees**, not meters
+
+`gz-sim-navsat` interprets `<horizontal><noise><stddev>` as degrees of
+latitude/longitude — **not meters**. A value like `stddev=2.5` is 2.5 degrees
+≈ 275 km of noise per sample, which makes any downstream filter diverge
+instantly (custom EKF blowing up to ±10⁶ m, `navsat_transform_node` reporting
+"latitude/longitude out of legal range for UTM zone").
+
+Convert from meters to degrees before setting it:
+
+```
+1 degree of latitude ≈ 111 320 m
+σ = 2.5 m  →  stddev = 2.5 / 111320 ≈ 2.25e-5 deg
+```
+
+`<vertical>` stddev stays in meters (altitude). See
+`src/beach_robot_description/urdf/gazebo.xacro` for the correct configuration.
+
+This is not documented clearly in the `gz-sim` sensor reference and cost
+~a day of debugging — worth remembering for any ROS 2 + Gazebo Harmonic
+project that fuses simulated GPS.
+
 ## Development Notes
 
 - **Editing code:** edit files in `src/` and `config/` from your host IDE — they are bind-mounted into the container.

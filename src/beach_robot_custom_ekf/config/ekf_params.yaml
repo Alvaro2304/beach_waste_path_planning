@@ -8,10 +8,10 @@ ekf_imu_gps_node:
 
     # ---- Process noise Q (5x5 diagonal) -----------------------------------
     # These scale linearly with dt inside the prediction step.
-    q_x:     0.01    # [m^2/s]   position-x process noise
-    q_y:     0.01    # [m^2/s]   position-y process noise
+    q_x:     0.1    # [m^2/s]   position-x process noise
+    q_y:     0.1    # [m^2/s]   position-y process noise
     q_theta: 0.005   # [rad^2/s] heading process noise
-    q_v:     0.1     # [(m/s)^2/s] velocity process noise
+    q_v:     1.0     # [(m/s)^2/s] velocity process noise
     q_omega: 0.05    # [(rad/s)^2/s] angular-rate process noise
 
     # ---- GPS measurement noise R_gps (2x2 diagonal) ----------------------
